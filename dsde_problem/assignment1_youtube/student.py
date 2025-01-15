@@ -5,8 +5,8 @@ import json
     ASSIGNMENT 1 (STUDENT VERSION):
     Using pandas to explore youtube trending data from GB (GBvideos.csv and GB_category_id.json) and answer the questions.
 """
-path = 'data/GBvideos.csv'
-json_path = 'data/GB_category_id.csv'
+path = 'assignment1_youtube/USvideos.csv'
+json_path = 'data/GB_category_id.json'
 
 def Q1():
     """
@@ -63,13 +63,18 @@ def Q5(vdo_df):
     # TODO:  Paste your code here
     with open(json_path,'r') as file:
         jsn = json.load(file) 
+
     df = vdo_df.drop_duplicates()
 
+    arr = []
     for item in jsn['items']:
-        if item['snippet']['title'] == 'Sports' and item['snippet']['assignable'] == True: sport_id = int(item['id'])
-        if item['snippet']['title'] == 'Comedy' and item['snippet']['assignable'] == True: comedy_id = int(item['id'])
+        if item['snippet']['assignable'] == True:
+            arr.append({'category_id':int(item['id']), 'category':item['snippet']['title']})
     
-    grouped_df = df.groupby(['trending_date','category_id'])['views'].sum()
-    pivot_df = grouped_df.unstack(fill_value=0)
-    res = pivot_df[pivot_df[sport_id] > pivot_df[comedy_id]]
-    return len(res)
+    arr_df = pd.DataFrame(arr) 
+    df = df.merge(arr_df,left_on='category_id', right_on='category_id')
+    grouped_df = df.groupby(['trending_date', 'category'])['views'].sum().unstack(fill_value=0)
+    return grouped_df[grouped_df['Sports']>grouped_df['Comedy']].shape[0]
+
+df = pd.read_csv(path)
+print(df.describe(include='all'))
