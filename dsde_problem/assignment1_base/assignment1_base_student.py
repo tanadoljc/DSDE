@@ -1,7 +1,7 @@
 import pandas as pd
 
 def main():
-    file = input()
+    file = 'scores_student.csv'
     func = input()
     df = pd.read_csv(file)
 
