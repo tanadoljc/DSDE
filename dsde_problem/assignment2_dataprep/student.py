@@ -1,5 +1,7 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OneHotEncoder
 
 """
     ASSIGNMENT 2 (STUDENT VERSION):
@@ -26,10 +28,14 @@ def Q2(df):
             Drop categorical variables with flat values > 70% (variables with the same value in the same column)
             How many columns do we have left?
     '''
-    for column in df.columns:
-        
+    df.dropna(axis = 1, thresh=0.5*df.shape[0], inplace=True)
+
+    for col in df.columns:
+        if df[col].value_counts().max() > 0.7 * df.shape[0]:
+            df = df.drop(col, axis = 1)
+    
     # TODO: Code here
-    return None
+    return df.shape[1]
 
 
 def Q3(df):
@@ -39,7 +45,8 @@ def Q3(df):
             How many rows do we have left?
     '''
     # TODO: Code here
-    return None
+    df.dropna(subset=['Survived'], inplace=True)
+    return df.shape[0]
 
 
 def Q4(df):
@@ -53,7 +60,15 @@ def Q4(df):
             Hint: Use function round(_, 2)
     '''
     # TODO: Code here
-    return None
+    Q1 = df['Fare'].quantile(0.25)
+    Q3 = df['Fare'].quantile(0.75)
+    IQR = Q3 - Q1
+
+    df.loc[lambda df:df['Fare'] < (Q1 - 1.5*IQR), ['Fare']] = Q1 - 1.5*IQR
+    df.loc[lambda df:df['Fare'] > (Q3 + 1.5*IQR), ['Fare']] = Q3 + 1.5*IQR
+
+    # print(df['Fare'].iloc[13])
+    return round(df['Fare'].mean(), 2)
 
 
 def Q5(df):
@@ -65,7 +80,12 @@ def Q5(df):
             Hint: Use function round(_, 2)
     '''
     # TODO: Code here
-    return None
+    missing_column = df.select_dtypes(include=['number'])
+    missing_column = missing_column.columns[missing_column.isnull().any()]
+    num_imp = SimpleImputer(strategy='mean')
+    df[missing_column] = num_imp.fit_transform(df[missing_column])
+
+    return round(df['Age'].mean(), 2)
 
 
 def Q6(df):
@@ -77,7 +97,12 @@ def Q6(df):
             Hint: Use function round(_, 2)
     '''
     # TODO: Code here
-    return None
+    df['Embarked'] = df['Embarked'].fillna('Unknown')
+    oneHotEncoder = OneHotEncoder(sparse_output=False)
+    oneHotEncoded = oneHotEncoder.fit_transform(df[['Embarked']])
+    oneHotEncoded_df = pd.DataFrame(oneHotEncoded, columns=oneHotEncoder.get_feature_names_out(['Embarked']))
+    # print(oneHotEncoded_df)
+    return round(oneHotEncoded_df['Embarked_Q'].mean(), 2)
 
 
 def Q7(df):
@@ -90,8 +115,17 @@ def Q7(df):
             Don't forget to impute missing values with mean.
     '''
     # TODO: Code here
-    return None
+    df['Survived'] = df['Survived'].fillna(df['Survived'].mode()[0])
+
+    # impute missing values with mean
+    missing_column = df.select_dtypes(include=['number'])
+    missing_column = missing_column.columns[missing_column.isnull().any()]
+    df[missing_column] = df[missing_column].fillna(df[missing_column].mean())
+
+    train_df, test_df = train_test_split(df, test_size=0.3, random_state=123, stratify=df['Survived'])
+    count = train_df['Survived'].value_counts(normalize='True')
+    return round(count[1.0], 2)
 
 
 df  = pd.read_csv('assignment2_dataprep/titanic_to_student.csv')
-print(Q2(df))
+print(Q7(df))
